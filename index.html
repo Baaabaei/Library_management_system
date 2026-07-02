@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>سامانه مدیریت کتابخانه</title>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #1c2330;
+    --border: #30363d;
+    --accent: #d4a843;
+    --accent2: #b8833a;
+    --accent-glow: rgba(212,168,67,0.15);
+    --text: #e6edf3;
+    --text-muted: #7d8590;
+    --text-dim: #3d444d;
+    --green: #2ea043;
+    --green-bg: rgba(46,160,67,0.12);
+    --red: #da3633;
+    --red-bg: rgba(218,54,51,0.12);
+    --blue: #388bfd;
+    --blue-bg: rgba(56,139,253,0.12);
+    --radius: 10px;
+    --radius-lg: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Vazirmatn', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    direction: rtl;
+  }
+
+  /* ---- TOP BAR ---- */
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: -0.3px;
+  }
+  .logo-icon { font-size: 24px; }
+
+  /* ---- TABS ---- */
+  .tabs {
+    display: flex;
+    gap: 4px;
+  }
+  .tab {
+    padding: 8px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-muted);
+    transition: all 0.18s;
+    border: none;
+    background: transparent;
+    font-family: inherit;
+  }
+  .tab:hover { background: var(--surface2); color: var(--text); }
+  .tab.active { background: var(--accent-glow); color: var(--accent); font-weight: 600; }
+
+  /* ---- MAIN ---- */
+  .main { padding: 32px; max-width: 1300px; margin: 0 auto; }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* ---- STAT CARDS ---- */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    border-radius: 3px 3px 0 0;
+  }
+  .stat-card.gold::before { background: var(--accent); }
+  .stat-card.green::before { background: var(--green); }
+  .stat-card.blue::before { background: var(--blue); }
+  .stat-card.red::before { background: var(--red); }
+  .stat-label { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; }
+  .stat-value { font-size: 32px; font-weight: 900; line-height: 1; }
+  .stat-card.gold .stat-value { color: var(--accent); }
+  .stat-card.green .stat-value { color: var(--green); }
+  .stat-card.blue .stat-value { color: var(--blue); }
+  .stat-card.red .stat-value { color: var(--red); }
+
+  /* ---- SECTION HEADER ---- */
+  .sec-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .sec-title { font-size: 18px; font-weight: 700; color: var(--text); }
+
+  /* ---- SEARCH / FILTER ---- */
+  .search-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .search-input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 14px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 14px;
+    min-width: 200px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .search-input:focus { border-color: var(--accent); }
+  .search-input::placeholder { color: var(--text-dim); }
+
+  /* ---- BTN ---- */
+  .btn {
+    padding: 9px 18px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-primary { background: var(--accent); color: #000; }
+  .btn-primary:hover { background: var(--accent2); transform: translateY(-1px); }
+  .btn-ghost { background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border); }
+  .btn-ghost:hover { color: var(--text); border-color: var(--text-muted); }
+  .btn-danger { background: var(--red-bg); color: var(--red); border: 1px solid rgba(218,54,51,0.3); }
+  .btn-danger:hover { background: rgba(218,54,51,0.2); }
+  .btn-success { background: var(--green-bg); color: var(--green); border: 1px solid rgba(46,160,67,0.3); }
+  .btn-success:hover { background: rgba(46,160,67,0.22); }
+  .btn-sm { padding: 5px 12px; font-size: 12px; }
+
+  /* ---- TABLE ---- */
+  .table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  thead { background: var(--surface2); }
+  th {
+    padding: 13px 16px;
+    text-align: right;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  td {
+    padding: 13px 16px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    vertical-align: middle;
+  }
+  tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--surface2); }
+  .empty-row td { text-align: center; padding: 48px; color: var(--text-muted); font-size: 15px; }
+
+  /* ---- BADGE ---- */
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .badge-out { background: var(--red-bg); color: var(--red); border: 1px solid rgba(218,54,51,0.25); }
+  .badge-returned { background: var(--green-bg); color: var(--green); border: 1px solid rgba(46,160,67,0.25); }
+  .badge-avail { background: var(--blue-bg); color: var(--blue); border: 1px solid rgba(56,139,253,0.25); }
+
+  /* ---- MODAL ---- */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+    z-index: 200;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    width: 100%;
+    max-width: 560px;
+    padding: 28px;
+    position: relative;
+    animation: slideUp 0.2s ease;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  .modal-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+    color: var(--accent);
+  }
+  .modal-close {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 20px;
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.15s;
+  }
+  .modal-close:hover { color: var(--text); }
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* ---- FORM ---- */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-grid.single { grid-template-columns: 1fr; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group.full { grid-column: 1 / -1; }
+  .form-label { font-size: 12px; font-weight: 600; color: var(--text-muted); }
+  .form-control {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.15s;
+    width: 100%;
+  }
+  .form-control:focus { border-color: var(--accent); }
+  .form-control::placeholder { color: var(--text-dim); }
+  select.form-control option { background: var(--surface2); }
+
+  /* ---- TOAST ---- */
+  .toast-container {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 999;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: none;
+  }
+  .toast {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 20px;
+    font-size: 14px;
+    font-weight: 500;
+    animation: toastIn 0.25s ease;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+  }
+  @keyframes toastIn {
+    from { transform: translateY(10px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  .toast.success { border-color: rgba(46,160,67,0.4); color: var(--green); }
+  .toast.error { border-color: rgba(218,54,51,0.4); color: var(--red); }
+  .toast.info { border-color: rgba(56,139,253,0.4); color: var(--blue); }
+
+  /* ---- EXPORT BTN ---- */
+  .export-row { display: flex; gap: 8px; align-items: center; }
+
+  /* ---- AVAIL INDICATOR ---- */
+  .avail-dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-left: 6px;
+  }
+  .avail-dot.ok { background: var(--green); }
+  .avail-dot.low { background: var(--accent); }
+  .avail-dot.none { background: var(--red); }
+
+  .divider { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+  .text-muted { color: var(--text-muted); }
+  .mt-4 { margin-top: 16px; }
+
+  @media (max-width: 600px) {
+    .main { padding: 16px; }
+    .form-grid { grid-template-columns: 1fr; }
+    .topbar { padding: 0 16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="logo">
+    <span class="logo-icon">📚</span>
+    سامانه مدیریت کتابخانه
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('dashboard')">داشبورد</button>
+    <button class="tab" onclick="showTab('books')">فهرست کتب</button>
+    <button class="tab" onclick="showTab('loans')">امانت‌ها</button>
+    <button class="tab" onclick="showTab('search')">جستجو</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- DASHBOARD -->
+  <div class="section active" id="tab-dashboard">
+    <div class="stats" id="stats-row"></div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;flex-wrap:wrap;" id="dash-grids">
+      <div>
+        <div class="sec-header"><div class="sec-title">📕 امانت‌های فعال</div></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>نام</th><th>کتاب</th><th>تاریخ امانت</th></tr></thead>
+            <tbody id="active-loans-table"></tbody>
+          </table>
+        </div>
+      </div>
+      <div>
+        <div class="sec-header"><div class="sec-title">📗 آخرین تحویل‌ها</div></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>نام</th><th>کتاب</th><th>تاریخ تحویل</th></tr></thead>
+            <tbody id="returned-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOOKS -->
+  <div class="section" id="tab-books">
+    <div class="sec-header">
+      <div class="sec-title">📚 فهرست کتب کتابخانه</div>
+      <div class="export-row">
+        <button class="btn btn-ghost" onclick="exportBooks()">⬇ دانلود CSV</button>
+        <button class="btn btn-primary" onclick="openAddBook()">+ افزودن کتاب</button>
+      </div>
+    </div>
+    <div class="search-row" style="margin-bottom:16px;">
+      <input class="search-input" id="book-search" placeholder="جستجو در عنوان یا نویسنده..." oninput="renderBooks()">
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>عنوان کتاب</th>
+            <th>نویسنده</th>
+            <th>کد</th>
+            <th>تعداد کل</th>
+            <th>موجود</th>
+            <th>عملیات</th>
+          </tr>
+        </thead>
+        <tbody id="books-table"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- LOANS -->
+  <div class="section" id="tab-loans">
+    <div class="sec-header">
+      <div class="sec-title">📋 ثبت امانت‌ها</div>
+      <div class="export-row">
+        <select class="search-input" id="loan-filter" onchange="renderLoans()" style="min-width:140px;">
+          <option value="all">همه</option>
+          <option value="active">امانت فعال</option>
+          <option value="returned">تحویل داده شده</option>
+        </select>
+        <button class="btn btn-ghost" onclick="exportLoans()">⬇ دانلود CSV</button>
+        <button class="btn btn-primary" onclick="openAddLoan()">+ ثبت امانت</button>
+      </div>
+    </div>
+    <div class="search-row" style="margin-bottom:16px;">
+      <input class="search-input" id="loan-search" placeholder="جستجو در نام، نشان، یا عنوان کتاب..." oninput="renderLoans()">
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>نشان</th>
+            <th>نام</th>
+            <th>درجه</th>
+            <th>قسمت</th>
+            <th>شماره تماس</th>
+            <th>عنوان کتاب</th>
+            <th>کد کنگره</th>
+            <th>تاریخ امانت</th>
+            <th>تاریخ بازگردانی</th>
+            <th>وضعیت</th>
+            <th>عملیات</th>
+          </tr>
+        </thead>
+        <tbody id="loans-table"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SEARCH -->
+  <div class="section" id="tab-search">
+    <div class="sec-header"><div class="sec-title">🔍 جستجوی پیشرفته</div></div>
+    <div class="search-row" style="margin-bottom:24px;">
+      <input class="search-input" id="global-search" placeholder="جستجو در کل سامانه..." oninput="renderGlobalSearch()" style="flex:1;">
+    </div>
+    <div id="global-results"></div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- TOAST -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- MODAL: ADD/EDIT BOOK -->
+<div class="modal-overlay" id="modal-book">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-book')">✕</button>
+    <div class="modal-title" id="modal-book-title">افزودن کتاب جدید</div>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label class="form-label">عنوان کتاب</label>
+        <input class="form-control" id="b-name" placeholder="عنوان کتاب را وارد کنید">
+      </div>
+      <div class="form-group full">
+        <label class="form-label">نویسنده / مؤلف</label>
+        <input class="form-control" id="b-author" placeholder="نام نویسنده">
+      </div>
+      <div class="form-group">
+        <label class="form-label">کد کنگره</label>
+        <input class="form-control" id="b-code" placeholder="مثلاً AC127">
+      </div>
+      <div class="form-group">
+        <label class="form-label">تعداد نسخه</label>
+        <input class="form-control" id="b-number" type="number" min="0" value="1">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-book')">انصراف</button>
+      <button class="btn btn-primary" onclick="saveBook()">ذخیره</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: ADD/EDIT LOAN -->
+<div class="modal-overlay" id="modal-loan">
+  <div class="modal" style="max-width:680px;">
+    <button class="modal-close" onclick="closeModal('modal-loan')">✕</button>
+    <div class="modal-title" id="modal-loan-title">ثبت امانت جدید</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">نشان</label>
+        <input class="form-control" id="l-neshan" placeholder="نشان (نام خانوادگی)">
+      </div>
+      <div class="form-group">
+        <label class="form-label">نام</label>
+        <input class="form-control" id="l-name" placeholder="نام">
+      </div>
+      <div class="form-group">
+        <label class="form-label">درجه</label>
+        <input class="form-control" id="l-daraje" placeholder="مثلاً سال یکم / سرباز">
+      </div>
+      <div class="form-group">
+        <label class="form-label">قسمت</label>
+        <input class="form-control" id="l-qesmat" placeholder="نام گروهان/قسمت">
+      </div>
+      <div class="form-group">
+        <label class="form-label">شماره پرسنلی/دانشجویی</label>
+        <input class="form-control" id="l-personnel" placeholder="شماره پرسنلی">
+      </div>
+      <div class="form-group">
+        <label class="form-label">شماره تماس</label>
+        <input class="form-control" id="l-phone" placeholder="شماره موبایل">
+      </div>
+      <div class="form-group full">
+        <label class="form-label">عنوان کتاب</label>
+        <input class="form-control" id="l-book" placeholder="عنوان کتاب امانت گرفته شده" list="book-titles-list">
+        <datalist id="book-titles-list"></datalist>
+      </div>
+      <div class="form-group">
+        <label class="form-label">کد کنگره</label>
+        <input class="form-control" id="l-congress" placeholder="کد کنگره (اختیاری)">
+      </div>
+      <div class="form-group">
+        <label class="form-label">تاریخ امانت</label>
+        <input class="form-control" id="l-borrow-date" placeholder="مثلاً ۱۴۰۴/۰۸/۰۱">
+      </div>
+      <div class="form-group">
+        <label class="form-label">تاریخ بازگردانی</label>
+        <input class="form-control" id="l-return-date" placeholder="خالی بگذارید اگر هنوز پس داده نشده">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-loan')">انصراف</button>
+      <button class="btn btn-primary" onclick="saveLoan()">ذخیره</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: RETURN BOOK -->
+<div class="modal-overlay" id="modal-return">
+  <div class="modal" style="max-width:400px;">
+    <button class="modal-close" onclick="closeModal('modal-return')">✕</button>
+    <div class="modal-title">ثبت تحویل کتاب</div>
+    <p style="color:var(--text-muted);font-size:14px;margin-bottom:16px;" id="return-info"></p>
+    <div class="form-group">
+      <label class="form-label">تاریخ بازگردانی</label>
+      <input class="form-control" id="return-date-input" placeholder="مثلاً ۱۴۰۴/۰۸/۳۰">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-return')">انصراف</button>
+      <button class="btn btn-success" onclick="confirmReturn()">✓ تأیید تحویل</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===================== DATA =====================
+const INITIAL_BOOKS = [{"name":" پرسشهاي عجيب و پاسخ هاي عجيب تر ","author":" نوشته ا. جي . آرمسترانگ ترجمه و بازنوشته پريسا همايون روز ","code":" AC ","number":6},{"name":" ترجمه و گلچینی از کشکول شیخ بهایی (م) ","author":" نجفی یزدی ","code":" AC۱۰۵ ","number":1},{"name":" کشکول طبسی(مرجع) ","author":" سید علنیقی طبسی حائری ","code":" AC۱۲۷ ","number":1}];
+
+const INITIAL_LOANS = [{"نشان":"کریمی","نام":"محمدحسین","درجه":"سال یکم","قسمت":"گروهان توکلی","شماره پرسنلی/دانشجویی":"840331465","شماره تماس":"9912946824","عنوان کتاب":"هنر بازی استراتژیک","کد کنگره":"","تاریخ امانت":"1404/07/02","تاریخ بازگردانی":""},{"نشان":"نوری شعرباف","نام":"امیرعباس","درجه":"سال دوم","قسمت":"گروهان  شهید توکلی","شماره پرسنلی/دانشجویی":"840331271","شماره تماس":"9931187440","عنوان کتاب":"طراحی دیجیتال (مدار منطقی) مانو","کد کنگره":"tk7888","تاریخ امانت":"1404/08/12","تاریخ بازگردانی":"1404/08/25"},{"نشان":"سلیمی","نام":"مهران","درجه":"سال یکم","قسمت":"شهید دوران","شماره پرسنلی/دانشجویی":"840329639","شماره تماس":"9217944328","عنوان کتاب":"انواع مدیتیشن کوندالینی","کد کنگره":"BL627","تاریخ امانت":"1404/08/03","تاریخ بازگردانی":"1404/08/13"},{"نشان":"شیخی","نام":"حسین","درجه":"سرباز","قسمت":"شهید اقبالی","شماره پرسنلی/دانشجویی":"-","شماره تماس":"9377390480","عنوان کتاب":"تاریخ انبیا","کد کنگره":"","تاریخ امانت":"1404/07/06","تاریخ بازگردانی":""},{"نشان":"شیخی","نام":"حسین","درجه":"سرباز","قسمت":"شهید اقبالی","شماره پرسنلی/دانشجویی":"-","شماره تماس":"9377390480","عنوان کتاب":"زنان نمونه","کد کنگره":"","تاریخ امانت":"1404/07/06","تاریخ بازگردانی":""}];
+
+// Load from localStorage or use initial data
+let books = JSON.parse(localStorage.getItem('lib_books') || 'null') || INITIAL_BOOKS.map((b,i) => ({...b, id: i+1}));
+let loans = JSON.parse(localStorage.getItem('lib_loans') || 'null') || INITIAL_LOANS.map((l,i) => ({...l, id: i+1}));
+let nextBookId = Math.max(...books.map(b=>b.id||0), 0) + 1;
+let nextLoanId = Math.max(...loans.map(l=>l.id||0), 0) + 1;
+
+function save() {
+  localStorage.setItem('lib_books', JSON.stringify(books));
+  localStorage.setItem('lib_loans', JSON.stringify(loans));
+}
+
+// ===================== COMPUTED =====================
+function getActiveLoansForBook(bookName) {
+  return loans.filter(l => l['عنوان کتاب'].trim() === bookName.trim() && !l['تاریخ بازگردانی']).length;
+}
+
+function getAvailableCount(book) {
+  return (book.number || 0) - getActiveLoansForBook(book.name);
+}
+
+function getStats() {
+  const totalBooks = books.length;
+  const totalCopies = books.reduce((s,b) => s + (parseInt(b.number)||0), 0);
+  const activeLoans = loans.filter(l => !l['تاریخ بازگردانی']).length;
+  const returned = loans.filter(l => l['تاریخ بازگردانی']).length;
+  return { totalBooks, totalCopies, activeLoans, returned };
+}
+
+// ===================== TABS =====================
+function showTab(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  event.target.classList.add('active');
+  if (name==='dashboard') renderDashboard();
+  if (name==='books') renderBooks();
+  if (name==='loans') renderLoans();
+  if (name==='search') renderGlobalSearch();
+}
+
+// ===================== DASHBOARD =====================
+function renderDashboard() {
+  const s = getStats();
+  document.getElementById('stats-row').innerHTML = `
+    <div class="stat-card gold"><div class="stat-label">تعداد عناوین کتاب</div><div class="stat-value">${s.totalBooks}</div></div>
+    <div class="stat-card blue"><div class="stat-label">کل نسخه‌ها</div><div class="stat-value">${s.totalCopies}</div></div>
+    <div class="stat-card red"><div class="stat-label">امانت فعال</div><div class="stat-value">${s.activeLoans}</div></div>
+    <div class="stat-card green"><div class="stat-label">تحویل داده شده</div><div class="stat-value">${s.returned}</div></div>
+  `;
+  const active = loans.filter(l => !l['تاریخ بازگردانی']);
+  const atbl = document.getElementById('active-loans-table');
+  if (active.length === 0) {
+    atbl.innerHTML = `<tr class="empty-row"><td colspan="3">امانت فعالی وجود ندارد</td></tr>`;
+  } else {
+    atbl.innerHTML = active.map(l => `
+      <tr>
+        <td>${l['نشان']} ${l['نام']}</td>
+        <td>${l['عنوان کتاب']}</td>
+        <td style="color:var(--accent)">${l['تاریخ امانت']}</td>
+      </tr>`).join('');
+  }
+  const ret = loans.filter(l => l['تاریخ بازگردانی']).slice(-5).reverse();
+  const rtbl = document.getElementById('returned-table');
+  if (ret.length === 0) {
+    rtbl.innerHTML = `<tr class="empty-row"><td colspan="3">تحویلی ثبت نشده</td></tr>`;
+  } else {
+    rtbl.innerHTML = ret.map(l => `
+      <tr>
+        <td>${l['نشان']} ${l['نام']}</td>
+        <td>${l['عنوان کتاب']}</td>
+        <td style="color:var(--green)">${l['تاریخ بازگردانی']}</td>
+      </tr>`).join('');
+  }
+}
+
+// ===================== BOOKS =====================
+function renderBooks() {
+  const q = (document.getElementById('book-search')?.value || '').trim().toLowerCase();
+  const filtered = books.filter(b =>
+    b.name.toLowerCase().includes(q) ||
+    b.author.toLowerCase().includes(q) ||
+    (b.code||'').toLowerCase().includes(q)
+  );
+  const tb = document.getElementById('books-table');
+  if (filtered.length === 0) {
+    tb.innerHTML = `<tr class="empty-row"><td colspan="7">کتابی یافت نشد</td></tr>`;
+    return;
+  }
+  tb.innerHTML = filtered.map((b, i) => {
+    const avail = getAvailableCount(b);
+    const total = parseInt(b.number)||0;
+    let dotClass = avail > 1 ? 'ok' : avail === 1 ? 'low' : 'none';
+    let availBadge = avail > 0
+      ? `<span class="badge badge-avail">${avail} موجود</span>`
+      : `<span class="badge badge-out">ناموجود</span>`;
+    return `<tr>
+      <td style="color:var(--text-muted)">${i+1}</td>
+      <td><strong>${b.name.trim()}</strong></td>
+      <td style="color:var(--text-muted)">${b.author.trim()}</td>
+      <td><code style="background:var(--surface2);padding:2px 7px;border-radius:5px;font-size:12px;">${(b.code||'').trim()}</code></td>
+      <td>${total}</td>
+      <td><span class="avail-dot ${dotClass}"></span>${availBadge}</td>
+      <td>
+        <button class="btn btn-ghost btn-sm" onclick="openEditBook(${b.id})">✏ ویرایش</button>
+        <button class="btn btn-danger btn-sm" style="margin-right:4px;" onclick="deleteBook(${b.id})">🗑</button>
+      </td>
+    </tr>`;
+  }).join('');
+  // update datalist for loans
+  updateBookDatalist();
+}
+
+function updateBookDatalist() {
+  const dl = document.getElementById('book-titles-list');
+  if (dl) dl.innerHTML = books.map(b => `<option value="${b.name.trim()}">`).join('');
+}
+
+let editingBookId = null;
+function openAddBook() {
+  editingBookId = null;
+  document.getElementById('modal-book-title').textContent = 'افزودن کتاب جدید';
+  ['b-name','b-author','b-code'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('b-number').value = 1;
+  openModal('modal-book');
+}
+function openEditBook(id) {
+  editingBookId = id;
+  const b = books.find(x=>x.id===id);
+  document.getElementById('modal-book-title').textContent = 'ویرایش کتاب';
+  document.getElementById('b-name').value = b.name.trim();
+  document.getElementById('b-author').value = b.author.trim();
+  document.getElementById('b-code').value = (b.code||'').trim();
+  document.getElementById('b-number').value = b.number;
+  openModal('modal-book');
+}
+function saveBook() {
+  const name = document.getElementById('b-name').value.trim();
+  const author = document.getElementById('b-author').value.trim();
+  const code = document.getElementById('b-code').value.trim();
+  const number = parseInt(document.getElementById('b-number').value)||0;
+  if (!name) { toast('لطفاً عنوان کتاب را وارد کنید','error'); return; }
+  if (editingBookId) {
+    const b = books.find(x=>x.id===editingBookId);
+    b.name = name; b.author = author; b.code = code; b.number = number;
+    toast('کتاب ویرایش شد','success');
+  } else {
+    books.push({id: nextBookId++, name, author, code, number});
+    toast('کتاب جدید اضافه شد','success');
+  }
+  save(); closeModal('modal-book'); renderBooks(); renderDashboard();
+}
+function deleteBook(id) {
+  if (!confirm('آیا از حذف این کتاب اطمینان دارید؟')) return;
+  books = books.filter(b=>b.id!==id);
+  save(); renderBooks(); renderDashboard();
+  toast('کتاب حذف شد','info');
+}
+function exportBooks() {
+  const rows = [['عنوان','نویسنده','کد کنگره','تعداد کل','موجود']];
+  books.forEach(b => rows.push([b.name.trim(), b.author.trim(), (b.code||'').trim(), b.number, getAvailableCount(b)]));
+  downloadCSV(rows, 'book_list.csv');
+}
+
+// ===================== LOANS =====================
+function renderLoans() {
+  const q = (document.getElementById('loan-search')?.value || '').trim().toLowerCase();
+  const filter = document.getElementById('loan-filter')?.value || 'all';
+  let filtered = loans.filter(l => {
+    const txt = `${l['نشان']} ${l['نام']} ${l['عنوان کتاب']} ${l['قسمت']}`.toLowerCase();
+    return txt.includes(q);
+  });
+  if (filter === 'active') filtered = filtered.filter(l => !l['تاریخ بازگردانی']);
+  if (filter === 'returned') filtered = filtered.filter(l => l['تاریخ بازگردانی']);
+
+  const tb = document.getElementById('loans-table');
+  if (filtered.length === 0) {
+    tb.innerHTML = `<tr class="empty-row"><td colspan="11">رکوردی یافت نشد</td></tr>`;
+    return;
+  }
+  tb.innerHTML = filtered.map(l => {
+    const isActive = !l['تاریخ بازگردانی'];
+    const badge = isActive
+      ? `<span class="badge badge-out">در امانت</span>`
+      : `<span class="badge badge-returned">تحویل داده شده</span>`;
+    const actions = isActive
+      ? `<button class="btn btn-success btn-sm" onclick="openReturn(${l.id})">تحویل</button>
+         <button class="btn btn-ghost btn-sm" style="margin-right:4px;" onclick="openEditLoan(${l.id})">✏</button>
+         <button class="btn btn-danger btn-sm" style="margin-right:4px;" onclick="deleteLoan(${l.id})">🗑</button>`
+      : `<button class="btn btn-ghost btn-sm" onclick="openEditLoan(${l.id})">✏</button>
+         <button class="btn btn-danger btn-sm" style="margin-right:4px;" onclick="deleteLoan(${l.id})">🗑</button>`;
+    return `<tr>
+      <td>${l['نشان']}</td>
+      <td>${l['نام']}</td>
+      <td>${l['درجه']}</td>
+      <td>${l['قسمت']}</td>
+      <td>${l['شماره تماس']}</td>
+      <td><strong>${l['عنوان کتاب']}</strong></td>
+      <td style="color:var(--text-muted)">${l['کد کنگره']||'-'}</td>
+      <td style="color:var(--accent)">${l['تاریخ امانت']}</td>
+      <td style="color:var(--green)">${l['تاریخ بازگردانی']||'-'}</td>
+      <td>${badge}</td>
+      <td>${actions}</td>
+    </tr>`;
+  }).join('');
+}
+
+let editingLoanId = null;
+function openAddLoan() {
+  editingLoanId = null;
+  document.getElementById('modal-loan-title').textContent = 'ثبت امانت جدید';
+  ['l-neshan','l-name','l-daraje','l-qesmat','l-personnel','l-phone','l-book','l-congress','l-borrow-date','l-return-date'].forEach(id => document.getElementById(id).value='');
+  updateBookDatalist();
+  openModal('modal-loan');
+}
+function openEditLoan(id) {
+  editingLoanId = id;
+  const l = loans.find(x=>x.id===id);
+  document.getElementById('modal-loan-title').textContent = 'ویرایش رکورد امانت';
+  document.getElementById('l-neshan').value = l['نشان'];
+  document.getElementById('l-name').value = l['نام'];
+  document.getElementById('l-daraje').value = l['درجه'];
+  document.getElementById('l-qesmat').value = l['قسمت'];
+  document.getElementById('l-personnel').value = l['شماره پرسنلی/دانشجویی'];
+  document.getElementById('l-phone').value = l['شماره تماس'];
+  document.getElementById('l-book').value = l['عنوان کتاب'];
+  document.getElementById('l-congress').value = l['کد کنگره']||'';
+  document.getElementById('l-borrow-date').value = l['تاریخ امانت'];
+  document.getElementById('l-return-date').value = l['تاریخ بازگردانی']||'';
+  updateBookDatalist();
+  openModal('modal-loan');
+}
+function saveLoan() {
+  const neshan = document.getElementById('l-neshan').value.trim();
+  const name = document.getElementById('l-name').value.trim();
+  const daraje = document.getElementById('l-daraje').value.trim();
+  const qesmat = document.getElementById('l-qesmat').value.trim();
+  const personnel = document.getElementById('l-personnel').value.trim();
+  const phone = document.getElementById('l-phone').value.trim();
+  const book = document.getElementById('l-book').value.trim();
+  const congress = document.getElementById('l-congress').value.trim();
+  const borrowDate = document.getElementById('l-borrow-date').value.trim();
+  const returnDate = document.getElementById('l-return-date').value.trim();
+  if (!neshan || !name || !book || !borrowDate) {
+    toast('لطفاً فیلدهای ضروری (نشان، نام، کتاب، تاریخ امانت) را پر کنید','error');
+    return;
+  }
+  const record = {
+    'نشان': neshan, 'نام': name, 'درجه': daraje, 'قسمت': qesmat,
+    'شماره پرسنلی/دانشجویی': personnel, 'شماره تماس': phone,
+    'عنوان کتاب': book, 'کد کنگره': congress,
+    'تاریخ امانت': borrowDate, 'تاریخ بازگردانی': returnDate
+  };
+  if (editingLoanId) {
+    const idx = loans.findIndex(x=>x.id===editingLoanId);
+    loans[idx] = {...record, id: editingLoanId};
+    toast('رکورد ویرایش شد','success');
+  } else {
+    loans.push({...record, id: nextLoanId++});
+    toast('امانت جدید ثبت شد','success');
+  }
+  save(); closeModal('modal-loan'); renderLoans(); renderDashboard();
+}
+function deleteLoan(id) {
+  if (!confirm('آیا از حذف این رکورد اطمینان دارید؟')) return;
+  loans = loans.filter(l=>l.id!==id);
+  save(); renderLoans(); renderDashboard();
+  toast('رکورد حذف شد','info');
+}
+
+let returningLoanId = null;
+function openReturn(id) {
+  returningLoanId = id;
+  const l = loans.find(x=>x.id===id);
+  document.getElementById('return-info').textContent =
+    `«${l['عنوان کتاب']}» امانت گرفته توسط ${l['نشان']} ${l['نام']}`;
+  document.getElementById('return-date-input').value = '';
+  openModal('modal-return');
+}
+function confirmReturn() {
+  const date = document.getElementById('return-date-input').value.trim();
+  if (!date) { toast('لطفاً تاریخ بازگردانی را وارد کنید','error'); return; }
+  const l = loans.find(x=>x.id===returningLoanId);
+  l['تاریخ بازگردانی'] = date;
+  save(); closeModal('modal-return'); renderLoans(); renderDashboard();
+  toast('تحویل کتاب ثبت شد','success');
+}
+function exportLoans() {
+  const rows = [['نشان','نام','درجه','قسمت','شماره پرسنلی','شماره تماس','عنوان کتاب','کد کنگره','تاریخ امانت','تاریخ بازگردانی','وضعیت']];
+  loans.forEach(l => rows.push([
+    l['نشان'],l['نام'],l['درجه'],l['قسمت'],l['شماره پرسنلی/دانشجویی'],
+    l['شماره تماس'],l['عنوان کتاب'],l['کد کنگره']||'',
+    l['تاریخ امانت'],l['تاریخ بازگردانی']||'',
+    l['تاریخ بازگردانی']?'تحویل داده شده':'در امانت'
+  ]));
+  downloadCSV(rows, 'loans.csv');
+}
+
+// ===================== SEARCH =====================
+function renderGlobalSearch() {
+  const q = (document.getElementById('global-search')?.value || '').trim().toLowerCase();
+  const container = document.getElementById('global-results');
+  if (!q) { container.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:40px;">عبارتی برای جستجو وارد کنید...</p>'; return; }
+
+  const matchedBooks = books.filter(b =>
+    b.name.toLowerCase().includes(q) || b.author.toLowerCase().includes(q) || (b.code||'').toLowerCase().includes(q)
+  );
+  const matchedLoans = loans.filter(l =>
+    Object.values(l).some(v => String(v).toLowerCase().includes(q))
+  );
+
+  let html = '';
+  if (matchedBooks.length > 0) {
+    html += `<div class="sec-title" style="margin-bottom:12px;">📚 کتاب‌ها (${matchedBooks.length})</div>`;
+    html += `<div class="table-wrap" style="margin-bottom:24px;"><table><thead><tr><th>عنوان</th><th>نویسنده</th><th>کد</th><th>موجود</th></tr></thead><tbody>`;
+    matchedBooks.forEach(b => {
+      const avail = getAvailableCount(b);
+      html += `<tr><td>${b.name.trim()}</td><td>${b.author.trim()}</td><td>${(b.code||'').trim()}</td><td>${avail > 0 ? `<span class="badge badge-avail">${avail}</span>` : '<span class="badge badge-out">ناموجود</span>'}</td></tr>`;
+    });
+    html += '</tbody></table></div>';
+  }
+  if (matchedLoans.length > 0) {
+    html += `<div class="sec-title" style="margin-bottom:12px;">📋 امانت‌ها (${matchedLoans.length})</div>`;
+    html += `<div class="table-wrap"><table><thead><tr><th>نشان</th><th>نام</th><th>کتاب</th><th>تاریخ امانت</th><th>وضعیت</th></tr></thead><tbody>`;
+    matchedLoans.forEach(l => {
+      const isActive = !l['تاریخ بازگردانی'];
+      html += `<tr><td>${l['نشان']}</td><td>${l['نام']}</td><td>${l['عنوان کتاب']}</td><td>${l['تاریخ امانت']}</td><td>${isActive ? '<span class="badge badge-out">در امانت</span>' : '<span class="badge badge-returned">تحویل داده شده</span>'}</td></tr>`;
+    });
+    html += '</tbody></table></div>';
+  }
+  if (!matchedBooks.length && !matchedLoans.length) {
+    html = `<p style="color:var(--text-muted);text-align:center;padding:40px;">نتیجه‌ای یافت نشد</p>`;
+  }
+  container.innerHTML = html;
+}
+
+// ===================== MODAL HELPERS =====================
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+});
+
+// ===================== TOAST =====================
+function toast(msg, type='info') {
+  const c = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+// ===================== CSV EXPORT =====================
+function downloadCSV(rows, filename) {
+  const bom = '\uFEFF';
+  const csv = bom + rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = filename;
+  a.click();
+}
+
+// ===================== INIT =====================
+renderDashboard();
+renderBooks();
+</script>
+</body>
