@@ -110,13 +110,13 @@ init_csv_files()
 @app.route('/')
 def index():
     """Serve the HTML page"""
-    html_file = os.path.join(os.path.dirname(__file__), 'program جدید کتابخانه.html')
+    html_file = os.path.join(os.path.dirname(__file__), 'index.html')
     if os.path.exists(html_file):
         return send_file(html_file)
     else:
         return jsonify({
             'status': 'error',
-            'message': 'HTML file not found. Please place "program جدید کتابخانه.html" in the same directory as server.py'
+            'message': 'HTML file not found. Please place "index.html" in the same directory as server.py'
         }), 404
 
 @app.route('/api/books', methods=['GET'])
