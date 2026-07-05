@@ -23,6 +23,8 @@
     --red-bg: rgba(218,54,51,0.12);
     --blue: #388bfd;
     --blue-bg: rgba(56,139,253,0.12);
+    --purple: #a371f7;
+    --purple-bg: rgba(163,113,247,0.12);
     --radius: 10px;
     --radius-lg: 16px;
   }
@@ -110,12 +112,14 @@
   .stat-card.green::before { background: var(--green); }
   .stat-card.blue::before { background: var(--blue); }
   .stat-card.red::before { background: var(--red); }
+  .stat-card.purple::before { background: var(--purple); }
   .stat-label { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; }
   .stat-value { font-size: 32px; font-weight: 900; line-height: 1; }
   .stat-card.gold .stat-value { color: var(--accent); }
   .stat-card.green .stat-value { color: var(--green); }
   .stat-card.blue .stat-value { color: var(--blue); }
   .stat-card.red .stat-value { color: var(--red); }
+  .stat-card.purple .stat-value { color: var(--purple); }
 
   /* ---- SECTION HEADER ---- */
   .sec-header {
@@ -210,6 +214,9 @@
   .badge-out { background: var(--red-bg); color: var(--red); border: 1px solid rgba(218,54,51,0.25); }
   .badge-returned { background: var(--green-bg); color: var(--green); border: 1px solid rgba(46,160,67,0.25); }
   .badge-avail { background: var(--blue-bg); color: var(--blue); border: 1px solid rgba(56,139,253,0.25); }
+  .badge-lib-main { background: var(--blue-bg); color: var(--blue); border: 1px solid rgba(56,139,253,0.25); }
+  .badge-lib-barq { background: var(--purple-bg); color: var(--purple); border: 1px solid rgba(163,113,247,0.3); }
+  .badge-overdue { background: var(--red-bg); color: var(--red); border: 1px solid rgba(218,54,51,0.3); font-weight: 700; }
 
   /* ---- MODAL ---- */
   .modal-overlay {
@@ -356,6 +363,7 @@
     <button class="tab active" onclick="showTab('dashboard')">داشبورد</button>
     <button class="tab" onclick="showTab('books')">فهرست کتب</button>
     <button class="tab" onclick="showTab('loans')">امانت‌ها</button>
+    <button class="tab" onclick="showTab('overdue')">⏰ دیرکردها</button>
     <button class="tab" onclick="showTab('search')">جستجو</button>
   </div>
 </div>
@@ -400,6 +408,11 @@
     </div>
     <div class="search-row" style="margin-bottom:16px;">
       <input class="search-input" id="book-search" placeholder="جستجو در عنوان یا نویسنده..." oninput="renderBooks()">
+      <select class="search-input" id="book-library-filter" onchange="renderBooks()" style="min-width:170px;">
+        <option value="all">همه کتابخانه‌ها</option>
+        <option value="اصلی">کتابخانه اصلی</option>
+        <option value="دانشکده برق">دانشکده برق</option>
+      </select>
     </div>
     <div class="table-wrap">
       <table>
@@ -409,6 +422,7 @@
             <th>عنوان کتاب</th>
             <th>نویسنده</th>
             <th>کد</th>
+            <th>کتابخانه</th>
             <th>تعداد کل</th>
             <th>موجود</th>
             <th>عملیات</th>
@@ -429,6 +443,11 @@
           <option value="active">امانت فعال</option>
           <option value="returned">تحویل داده شده</option>
         </select>
+        <select class="search-input" id="loan-library-filter" onchange="renderLoans()" style="min-width:170px;">
+          <option value="all">همه کتابخانه‌ها</option>
+          <option value="اصلی">کتابخانه اصلی</option>
+          <option value="دانشکده برق">دانشکده برق</option>
+        </select>
         <button class="btn btn-ghost" onclick="exportLoans()">⬇ دانلود CSV</button>
         <button class="btn btn-primary" onclick="openAddLoan()">+ ثبت امانت</button>
       </div>
@@ -446,6 +465,7 @@
             <th>قسمت</th>
             <th>شماره تماس</th>
             <th>عنوان کتاب</th>
+            <th>کتابخانه</th>
             <th>کد کنگره</th>
             <th>تاریخ امانت</th>
             <th>تاریخ بازگردانی</th>
@@ -454,6 +474,39 @@
           </tr>
         </thead>
         <tbody id="loans-table"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- OVERDUE -->
+  <div class="section" id="tab-overdue">
+    <div class="sec-header">
+      <div class="sec-title">⏰ امانت‌های دارای دیرکرد (بیش از ۲ هفته)</div>
+      <div class="export-row">
+        <select class="search-input" id="overdue-library-filter" onchange="renderOverdue()" style="min-width:170px;">
+          <option value="all">همه کتابخانه‌ها</option>
+          <option value="اصلی">کتابخانه اصلی</option>
+          <option value="دانشکده برق">دانشکده برق</option>
+        </select>
+        <button class="btn btn-ghost" onclick="exportOverdue()">⬇ دانلود CSV</button>
+      </div>
+    </div>
+    <p class="text-muted" style="margin-bottom:16px;font-size:13px;">این فهرست بر اساس تاریخ شمسی سیستم شما و به‌صورت خودکار محاسبه می‌شود.</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>نشان</th>
+            <th>نام</th>
+            <th>شماره تماس</th>
+            <th>عنوان کتاب</th>
+            <th>کتابخانه</th>
+            <th>تاریخ امانت</th>
+            <th>روزهای دیرکرد</th>
+            <th>عملیات</th>
+          </tr>
+        </thead>
+        <tbody id="overdue-table"></tbody>
       </table>
     </div>
   </div>
@@ -493,6 +546,13 @@
       <div class="form-group">
         <label class="form-label">تعداد نسخه</label>
         <input class="form-control" id="b-number" type="number" min="0" value="1">
+      </div>
+      <div class="form-group full">
+        <label class="form-label">کتابخانه</label>
+        <select class="form-control" id="b-library">
+          <option value="اصلی">کتابخانه اصلی</option>
+          <option value="دانشکده برق">دانشکده برق</option>
+        </select>
       </div>
     </div>
     <div class="modal-footer">
@@ -534,8 +594,15 @@
       </div>
       <div class="form-group full">
         <label class="form-label">عنوان کتاب</label>
-        <input class="form-control" id="l-book" placeholder="عنوان کتاب امانت گرفته شده" list="book-titles-list">
+        <input class="form-control" id="l-book" placeholder="عنوان کتاب امانت گرفته شده" list="book-titles-list" oninput="onLoanBookInput()">
         <datalist id="book-titles-list"></datalist>
+      </div>
+      <div class="form-group">
+        <label class="form-label">کتابخانه</label>
+        <select class="form-control" id="l-library">
+          <option value="اصلی">کتابخانه اصلی</option>
+          <option value="دانشکده برق">دانشکده برق</option>
+        </select>
       </div>
       <div class="form-group">
         <label class="form-label">کد کنگره</label>
@@ -581,14 +648,91 @@ const INITIAL_BOOKS = [{"name":" پرسشهاي عجيب و پاسخ هاي عج
 const INITIAL_LOANS = [{"نشان":"کریمی","نام":"محمدحسین","درجه":"سال یکم","قسمت":"گروهان توکلی","شماره پرسنلی/دانشجویی":"840331465","شماره تماس":"9912946824","عنوان کتاب":"هنر بازی استراتژیک","کد کنگره":"","تاریخ امانت":"1404/07/02","تاریخ بازگردانی":""},{"نشان":"نوری شعرباف","نام":"امیرعباس","درجه":"سال دوم","قسمت":"گروهان  شهید توکلی","شماره پرسنلی/دانشجویی":"840331271","شماره تماس":"9931187440","عنوان کتاب":"طراحی دیجیتال (مدار منطقی) مانو","کد کنگره":"tk7888","تاریخ امانت":"1404/08/12","تاریخ بازگردانی":"1404/08/25"},{"نشان":"سلیمی","نام":"مهران","درجه":"سال یکم","قسمت":"شهید دوران","شماره پرسنلی/دانشجویی":"840329639","شماره تماس":"9217944328","عنوان کتاب":"انواع مدیتیشن کوندالینی","کد کنگره":"BL627","تاریخ امانت":"1404/08/03","تاریخ بازگردانی":"1404/08/13"},{"نشان":"شیخی","نام":"حسین","درجه":"سرباز","قسمت":"شهید اقبالی","شماره پرسنلی/دانشجویی":"-","شماره تماس":"9377390480","عنوان کتاب":"تاریخ انبیا","کد کنگره":"","تاریخ امانت":"1404/07/06","تاریخ بازگردانی":""},{"نشان":"شیخی","نام":"حسین","درجه":"سرباز","قسمت":"شهید اقبالی","شماره پرسنلی/دانشجویی":"-","شماره تماس":"9377390480","عنوان کتاب":"زنان نمونه","کد کنگره":"","تاریخ امانت":"1404/07/06","تاریخ بازگردانی":""}];
 
 // Load from localStorage or use initial data
-let books = JSON.parse(localStorage.getItem('lib_books') || 'null') || INITIAL_BOOKS.map((b,i) => ({...b, id: i+1}));
-let loans = JSON.parse(localStorage.getItem('lib_loans') || 'null') || INITIAL_LOANS.map((l,i) => ({...l, id: i+1}));
+let books = JSON.parse(localStorage.getItem('lib_books') || 'null') || INITIAL_BOOKS.map((b,i) => ({...b, id: i+1, library: 'اصلی'}));
+let loans = JSON.parse(localStorage.getItem('lib_loans') || 'null') || INITIAL_LOANS.map((l,i) => ({...l, id: i+1, 'کتابخانه': 'اصلی'}));
+// Backfill library field for data saved before the multi-library feature existed
+books = books.map(b => ({...b, library: b.library || 'اصلی'}));
+loans = loans.map(l => ({...l, 'کتابخانه': l['کتابخانه'] || 'اصلی'}));
 let nextBookId = Math.max(...books.map(b=>b.id||0), 0) + 1;
 let nextLoanId = Math.max(...loans.map(l=>l.id||0), 0) + 1;
 
 function save() {
   localStorage.setItem('lib_books', JSON.stringify(books));
   localStorage.setItem('lib_loans', JSON.stringify(loans));
+}
+
+// ===================== JALALI DATE HELPERS =====================
+// Converts a Jalali (Persian/Shamsi) calendar date to a Gregorian JS Date.
+// Uses the well-known public-domain Jalali<->Gregorian conversion algorithm.
+function div(a, b) { return Math.floor(a / b); }
+
+function jalaliToGregorian(jy, jm, jd) {
+  let gy;
+  if (jy > 979) { gy = 1600; jy -= 979; } else { gy = 621; }
+  let days = (365 * jy) + (div(jy, 33) * 8) + div(((jy % 33) + 3), 4) + 78 + jd +
+    ((jm < 7) ? (jm - 1) * 31 : ((jm - 7) * 30) + 186);
+  gy += 400 * div(days, 146097);
+  days %= 146097;
+  if (days > 36524) {
+    gy += 100 * div(--days, 36524);
+    days %= 36524;
+    if (days >= 365) days++;
+  }
+  gy += 4 * div(days, 1461);
+  days %= 1461;
+  if (days > 365) {
+    gy += div((days - 1), 365);
+    days = (days - 1) % 365;
+  }
+  const gd = days + 1;
+  const isLeapGY = (gy % 4 === 0 && gy % 100 !== 0) || (gy % 400 === 0);
+  const monthDays = [0, 31, isLeapGY ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  let gm = 0, remaining = gd;
+  for (gm = 1; gm <= 12; gm++) {
+    if (remaining <= monthDays[gm]) break;
+    remaining -= monthDays[gm];
+  }
+  return new Date(gy, gm - 1, remaining);
+}
+
+// Parses a Jalali date string like "1404/07/02" or "1404-07-02" into a Gregorian Date.
+// Returns null if the string isn't a recognizable date.
+function parseJalaliDate(str) {
+  if (!str) return null;
+  const parts = String(str).trim().split(/[\/\-]/).map(s => s.trim());
+  if (parts.length !== 3) return null;
+  const [jy, jm, jd] = parts.map(n => parseInt(n, 10));
+  if (!jy || !jm || !jd || jm < 1 || jm > 12 || jd < 1 || jd > 31) return null;
+  try {
+    return jalaliToGregorian(jy, jm, jd);
+  } catch (e) {
+    return null;
+  }
+}
+
+// Returns how many days ago a Jalali borrow-date string was, or null if unparseable.
+function daysSince(jalaliDateStr) {
+  const borrowDate = parseJalaliDate(jalaliDateStr);
+  if (!borrowDate) return null;
+  const today = new Date();
+  const b = new Date(borrowDate.getFullYear(), borrowDate.getMonth(), borrowDate.getDate());
+  const t = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  return Math.round((t - b) / 86400000);
+}
+
+const OVERDUE_THRESHOLD_DAYS = 14; // more than 2 weeks
+
+function isOverdue(loan) {
+  if (loan['تاریخ بازگردانی']) return false; // already returned
+  const days = daysSince(loan['تاریخ امانت']);
+  return days !== null && days > OVERDUE_THRESHOLD_DAYS;
+}
+
+function getOverdueLoans() {
+  return loans
+    .filter(isOverdue)
+    .map(l => ({ ...l, __days: daysSince(l['تاریخ امانت']) }))
+    .sort((a, b) => b.__days - a.__days);
 }
 
 // ===================== COMPUTED =====================
@@ -605,7 +749,8 @@ function getStats() {
   const totalCopies = books.reduce((s,b) => s + (parseInt(b.number)||0), 0);
   const activeLoans = loans.filter(l => !l['تاریخ بازگردانی']).length;
   const returned = loans.filter(l => l['تاریخ بازگردانی']).length;
-  return { totalBooks, totalCopies, activeLoans, returned };
+  const overdue = getOverdueLoans().length;
+  return { totalBooks, totalCopies, activeLoans, returned, overdue };
 }
 
 // ===================== TABS =====================
@@ -617,6 +762,7 @@ function showTab(name) {
   if (name==='dashboard') renderDashboard();
   if (name==='books') renderBooks();
   if (name==='loans') renderLoans();
+  if (name==='overdue') renderOverdue();
   if (name==='search') renderGlobalSearch();
 }
 
@@ -628,6 +774,7 @@ function renderDashboard() {
     <div class="stat-card blue"><div class="stat-label">کل نسخه‌ها</div><div class="stat-value">${s.totalCopies}</div></div>
     <div class="stat-card red"><div class="stat-label">امانت فعال</div><div class="stat-value">${s.activeLoans}</div></div>
     <div class="stat-card green"><div class="stat-label">تحویل داده شده</div><div class="stat-value">${s.returned}</div></div>
+    <div class="stat-card purple" style="cursor:pointer;" onclick="document.querySelectorAll('.tab')[3].click();"><div class="stat-label">⏰ دیرکرد (+۲ هفته)</div><div class="stat-value">${s.overdue}</div></div>
   `;
   const active = loans.filter(l => !l['تاریخ بازگردانی']);
   const atbl = document.getElementById('active-loans-table');
@@ -656,16 +803,25 @@ function renderDashboard() {
 }
 
 // ===================== BOOKS =====================
+function libBadge(lib) {
+  return lib === 'دانشکده برق'
+    ? `<span class="badge badge-lib-barq">دانشکده برق</span>`
+    : `<span class="badge badge-lib-main">کتابخانه اصلی</span>`;
+}
+
 function renderBooks() {
   const q = (document.getElementById('book-search')?.value || '').trim().toLowerCase();
-  const filtered = books.filter(b =>
-    b.name.toLowerCase().includes(q) ||
-    b.author.toLowerCase().includes(q) ||
-    (b.code||'').toLowerCase().includes(q)
-  );
+  const libFilter = document.getElementById('book-library-filter')?.value || 'all';
+  const filtered = books.filter(b => {
+    const matchesQ = b.name.toLowerCase().includes(q) ||
+      b.author.toLowerCase().includes(q) ||
+      (b.code||'').toLowerCase().includes(q);
+    const matchesLib = libFilter === 'all' || (b.library || 'اصلی') === libFilter;
+    return matchesQ && matchesLib;
+  });
   const tb = document.getElementById('books-table');
   if (filtered.length === 0) {
-    tb.innerHTML = `<tr class="empty-row"><td colspan="7">کتابی یافت نشد</td></tr>`;
+    tb.innerHTML = `<tr class="empty-row"><td colspan="8">کتابی یافت نشد</td></tr>`;
     return;
   }
   tb.innerHTML = filtered.map((b, i) => {
@@ -680,6 +836,7 @@ function renderBooks() {
       <td><strong>${b.name.trim()}</strong></td>
       <td style="color:var(--text-muted)">${b.author.trim()}</td>
       <td><code style="background:var(--surface2);padding:2px 7px;border-radius:5px;font-size:12px;">${(b.code||'').trim()}</code></td>
+      <td>${libBadge(b.library || 'اصلی')}</td>
       <td>${total}</td>
       <td><span class="avail-dot ${dotClass}"></span>${availBadge}</td>
       <td>
@@ -703,6 +860,7 @@ function openAddBook() {
   document.getElementById('modal-book-title').textContent = 'افزودن کتاب جدید';
   ['b-name','b-author','b-code'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('b-number').value = 1;
+  document.getElementById('b-library').value = 'اصلی';
   openModal('modal-book');
 }
 function openEditBook(id) {
@@ -713,6 +871,7 @@ function openEditBook(id) {
   document.getElementById('b-author').value = b.author.trim();
   document.getElementById('b-code').value = (b.code||'').trim();
   document.getElementById('b-number').value = b.number;
+  document.getElementById('b-library').value = b.library || 'اصلی';
   openModal('modal-book');
 }
 function saveBook() {
@@ -720,13 +879,14 @@ function saveBook() {
   const author = document.getElementById('b-author').value.trim();
   const code = document.getElementById('b-code').value.trim();
   const number = parseInt(document.getElementById('b-number').value)||0;
+  const library = document.getElementById('b-library').value;
   if (!name) { toast('لطفاً عنوان کتاب را وارد کنید','error'); return; }
   if (editingBookId) {
     const b = books.find(x=>x.id===editingBookId);
-    b.name = name; b.author = author; b.code = code; b.number = number;
+    b.name = name; b.author = author; b.code = code; b.number = number; b.library = library;
     toast('کتاب ویرایش شد','success');
   } else {
-    books.push({id: nextBookId++, name, author, code, number});
+    books.push({id: nextBookId++, name, author, code, number, library});
     toast('کتاب جدید اضافه شد','success');
   }
   save(); closeModal('modal-book'); renderBooks(); renderDashboard();
@@ -738,8 +898,8 @@ function deleteBook(id) {
   toast('کتاب حذف شد','info');
 }
 function exportBooks() {
-  const rows = [['عنوان','نویسنده','کد کنگره','تعداد کل','موجود']];
-  books.forEach(b => rows.push([b.name.trim(), b.author.trim(), (b.code||'').trim(), b.number, getAvailableCount(b)]));
+  const rows = [['عنوان','نویسنده','کد کنگره','کتابخانه','تعداد کل','موجود']];
+  books.forEach(b => rows.push([b.name.trim(), b.author.trim(), (b.code||'').trim(), b.library || 'اصلی', b.number, getAvailableCount(b)]));
   downloadCSV(rows, 'book_list.csv');
 }
 
@@ -747,16 +907,18 @@ function exportBooks() {
 function renderLoans() {
   const q = (document.getElementById('loan-search')?.value || '').trim().toLowerCase();
   const filter = document.getElementById('loan-filter')?.value || 'all';
+  const libFilter = document.getElementById('loan-library-filter')?.value || 'all';
   let filtered = loans.filter(l => {
     const txt = `${l['نشان']} ${l['نام']} ${l['عنوان کتاب']} ${l['قسمت']}`.toLowerCase();
-    return txt.includes(q);
+    const matchesLib = libFilter === 'all' || (l['کتابخانه'] || 'اصلی') === libFilter;
+    return txt.includes(q) && matchesLib;
   });
   if (filter === 'active') filtered = filtered.filter(l => !l['تاریخ بازگردانی']);
   if (filter === 'returned') filtered = filtered.filter(l => l['تاریخ بازگردانی']);
 
   const tb = document.getElementById('loans-table');
   if (filtered.length === 0) {
-    tb.innerHTML = `<tr class="empty-row"><td colspan="11">رکوردی یافت نشد</td></tr>`;
+    tb.innerHTML = `<tr class="empty-row"><td colspan="12">رکوردی یافت نشد</td></tr>`;
     return;
   }
   tb.innerHTML = filtered.map(l => {
@@ -777,6 +939,7 @@ function renderLoans() {
       <td>${l['قسمت']}</td>
       <td>${l['شماره تماس']}</td>
       <td><strong>${l['عنوان کتاب']}</strong></td>
+      <td>${libBadge(l['کتابخانه'] || 'اصلی')}</td>
       <td style="color:var(--text-muted)">${l['کد کنگره']||'-'}</td>
       <td style="color:var(--accent)">${l['تاریخ امانت']}</td>
       <td style="color:var(--green)">${l['تاریخ بازگردانی']||'-'}</td>
@@ -791,6 +954,7 @@ function openAddLoan() {
   editingLoanId = null;
   document.getElementById('modal-loan-title').textContent = 'ثبت امانت جدید';
   ['l-neshan','l-name','l-daraje','l-qesmat','l-personnel','l-phone','l-book','l-congress','l-borrow-date','l-return-date'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('l-library').value = 'اصلی';
   updateBookDatalist();
   openModal('modal-loan');
 }
@@ -805,11 +969,19 @@ function openEditLoan(id) {
   document.getElementById('l-personnel').value = l['شماره پرسنلی/دانشجویی'];
   document.getElementById('l-phone').value = l['شماره تماس'];
   document.getElementById('l-book').value = l['عنوان کتاب'];
+  document.getElementById('l-library').value = l['کتابخانه'] || 'اصلی';
   document.getElementById('l-congress').value = l['کد کنگره']||'';
   document.getElementById('l-borrow-date').value = l['تاریخ امانت'];
   document.getElementById('l-return-date').value = l['تاریخ بازگردانی']||'';
   updateBookDatalist();
   openModal('modal-loan');
+}
+// When the staff types/picks a book title that matches an existing book,
+// auto-select that book's library so it doesn't have to be set manually.
+function onLoanBookInput() {
+  const bookName = document.getElementById('l-book').value.trim();
+  const match = books.find(b => b.name.trim() === bookName);
+  if (match) document.getElementById('l-library').value = match.library || 'اصلی';
 }
 function saveLoan() {
   const neshan = document.getElementById('l-neshan').value.trim();
@@ -819,6 +991,7 @@ function saveLoan() {
   const personnel = document.getElementById('l-personnel').value.trim();
   const phone = document.getElementById('l-phone').value.trim();
   const book = document.getElementById('l-book').value.trim();
+  const library = document.getElementById('l-library').value;
   const congress = document.getElementById('l-congress').value.trim();
   const borrowDate = document.getElementById('l-borrow-date').value.trim();
   const returnDate = document.getElementById('l-return-date').value.trim();
@@ -829,7 +1002,7 @@ function saveLoan() {
   const record = {
     'نشان': neshan, 'نام': name, 'درجه': daraje, 'قسمت': qesmat,
     'شماره پرسنلی/دانشجویی': personnel, 'شماره تماس': phone,
-    'عنوان کتاب': book, 'کد کنگره': congress,
+    'عنوان کتاب': book, 'کتابخانه': library, 'کد کنگره': congress,
     'تاریخ امانت': borrowDate, 'تاریخ بازگردانی': returnDate
   };
   if (editingLoanId) {
@@ -867,14 +1040,50 @@ function confirmReturn() {
   toast('تحویل کتاب ثبت شد','success');
 }
 function exportLoans() {
-  const rows = [['نشان','نام','درجه','قسمت','شماره پرسنلی','شماره تماس','عنوان کتاب','کد کنگره','تاریخ امانت','تاریخ بازگردانی','وضعیت']];
+  const rows = [['نشان','نام','درجه','قسمت','شماره پرسنلی','شماره تماس','عنوان کتاب','کتابخانه','کد کنگره','تاریخ امانت','تاریخ بازگردانی','وضعیت']];
   loans.forEach(l => rows.push([
     l['نشان'],l['نام'],l['درجه'],l['قسمت'],l['شماره پرسنلی/دانشجویی'],
-    l['شماره تماس'],l['عنوان کتاب'],l['کد کنگره']||'',
+    l['شماره تماس'],l['عنوان کتاب'],l['کتابخانه']||'اصلی',l['کد کنگره']||'',
     l['تاریخ امانت'],l['تاریخ بازگردانی']||'',
     l['تاریخ بازگردانی']?'تحویل داده شده':'در امانت'
   ]));
   downloadCSV(rows, 'loans.csv');
+}
+
+// ===================== OVERDUE =====================
+function renderOverdue() {
+  const libFilter = document.getElementById('overdue-library-filter')?.value || 'all';
+  let overdue = getOverdueLoans();
+  if (libFilter !== 'all') overdue = overdue.filter(l => (l['کتابخانه']||'اصلی') === libFilter);
+
+  const tb = document.getElementById('overdue-table');
+  if (overdue.length === 0) {
+    tb.innerHTML = `<tr class="empty-row"><td colspan="8">هیچ امانت دیرکرد‌داری (بیش از ۲ هفته) وجود ندارد 🎉</td></tr>`;
+    return;
+  }
+  tb.innerHTML = overdue.map(l => `
+    <tr>
+      <td>${l['نشان']}</td>
+      <td>${l['نام']}</td>
+      <td>${l['شماره تماس']}</td>
+      <td><strong>${l['عنوان کتاب']}</strong></td>
+      <td>${libBadge(l['کتابخانه'] || 'اصلی')}</td>
+      <td style="color:var(--accent)">${l['تاریخ امانت']}</td>
+      <td><span class="badge badge-overdue">${l.__days} روز</span></td>
+      <td>
+        <button class="btn btn-success btn-sm" onclick="openReturn(${l.id})">تحویل</button>
+        <button class="btn btn-ghost btn-sm" style="margin-right:4px;" onclick="openEditLoan(${l.id})">✏</button>
+      </td>
+    </tr>`).join('');
+}
+
+function exportOverdue() {
+  const overdue = getOverdueLoans();
+  const rows = [['نشان','نام','شماره تماس','عنوان کتاب','کتابخانه','تاریخ امانت','روزهای دیرکرد']];
+  overdue.forEach(l => rows.push([
+    l['نشان'], l['نام'], l['شماره تماس'], l['عنوان کتاب'], l['کتابخانه']||'اصلی', l['تاریخ امانت'], l.__days
+  ]));
+  downloadCSV(rows, 'overdue.csv');
 }
 
 // ===================== SEARCH =====================
@@ -893,19 +1102,19 @@ function renderGlobalSearch() {
   let html = '';
   if (matchedBooks.length > 0) {
     html += `<div class="sec-title" style="margin-bottom:12px;">📚 کتاب‌ها (${matchedBooks.length})</div>`;
-    html += `<div class="table-wrap" style="margin-bottom:24px;"><table><thead><tr><th>عنوان</th><th>نویسنده</th><th>کد</th><th>موجود</th></tr></thead><tbody>`;
+    html += `<div class="table-wrap" style="margin-bottom:24px;"><table><thead><tr><th>عنوان</th><th>نویسنده</th><th>کد</th><th>کتابخانه</th><th>موجود</th></tr></thead><tbody>`;
     matchedBooks.forEach(b => {
       const avail = getAvailableCount(b);
-      html += `<tr><td>${b.name.trim()}</td><td>${b.author.trim()}</td><td>${(b.code||'').trim()}</td><td>${avail > 0 ? `<span class="badge badge-avail">${avail}</span>` : '<span class="badge badge-out">ناموجود</span>'}</td></tr>`;
+      html += `<tr><td>${b.name.trim()}</td><td>${b.author.trim()}</td><td>${(b.code||'').trim()}</td><td>${libBadge(b.library||'اصلی')}</td><td>${avail > 0 ? `<span class="badge badge-avail">${avail}</span>` : '<span class="badge badge-out">ناموجود</span>'}</td></tr>`;
     });
     html += '</tbody></table></div>';
   }
   if (matchedLoans.length > 0) {
     html += `<div class="sec-title" style="margin-bottom:12px;">📋 امانت‌ها (${matchedLoans.length})</div>`;
-    html += `<div class="table-wrap"><table><thead><tr><th>نشان</th><th>نام</th><th>کتاب</th><th>تاریخ امانت</th><th>وضعیت</th></tr></thead><tbody>`;
+    html += `<div class="table-wrap"><table><thead><tr><th>نشان</th><th>نام</th><th>کتاب</th><th>کتابخانه</th><th>تاریخ امانت</th><th>وضعیت</th></tr></thead><tbody>`;
     matchedLoans.forEach(l => {
       const isActive = !l['تاریخ بازگردانی'];
-      html += `<tr><td>${l['نشان']}</td><td>${l['نام']}</td><td>${l['عنوان کتاب']}</td><td>${l['تاریخ امانت']}</td><td>${isActive ? '<span class="badge badge-out">در امانت</span>' : '<span class="badge badge-returned">تحویل داده شده</span>'}</td></tr>`;
+      html += `<tr><td>${l['نشان']}</td><td>${l['نام']}</td><td>${l['عنوان کتاب']}</td><td>${libBadge(l['کتابخانه']||'اصلی')}</td><td>${l['تاریخ امانت']}</td><td>${isActive ? '<span class="badge badge-out">در امانت</span>' : '<span class="badge badge-returned">تحویل داده شده</span>'}</td></tr>`;
     });
     html += '</tbody></table></div>';
   }

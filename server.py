@@ -71,32 +71,33 @@ def write_csv(file_path, data, headers):
 def init_csv_files():
     """Create default CSV files if they don't exist"""
     # Books CSV headers
-    books_headers = ['id', 'name', 'author', 'code', 'number']
+    # 'کتابخانه' (library) tags which collection a book belongs to, e.g. 'اصلی' or 'دانشکده برق'
+    books_headers = ['id', 'name', 'author', 'code', 'number', 'کتابخانه']
     
     if not os.path.exists(BOOKS_CSV):
         # Create with sample data
         sample_books = [
-            {'id': 1, 'name': 'پرسشهاي عجيب و پاسخ هاي عجيب تر', 'author': 'نوشته ا. جي . آرمسترانگ', 'code': 'AC', 'number': 6},
-            {'id': 2, 'name': 'ترجمه و گلچینی از کشکول شیخ بهایی (م)', 'author': 'نجفی یزدی', 'code': 'AC۱۰۵', 'number': 1},
-            {'id': 3, 'name': 'کشکول طبسی(مرجع)', 'author': 'سید علنیقی طبسی حائری', 'code': 'AC۱۲۷', 'number': 1}
+            {'id': 1, 'name': 'پرسشهاي عجيب و پاسخ هاي عجيب تر', 'author': 'نوشته ا. جي . آرمسترانگ', 'code': 'AC', 'number': 6, 'کتابخانه': 'اصلی'},
+            {'id': 2, 'name': 'ترجمه و گلچینی از کشکول شیخ بهایی (م)', 'author': 'نجفی یزدی', 'code': 'AC۱۰۵', 'number': 1, 'کتابخانه': 'اصلی'},
+            {'id': 3, 'name': 'کشکول طبسی(مرجع)', 'author': 'سید علنیقی طبسی حائری', 'code': 'AC۱۲۷', 'number': 1, 'کتابخانه': 'اصلی'}
         ]
         write_csv(BOOKS_CSV, sample_books, books_headers)
         print(f"✅ Created {BOOKS_CSV} with sample data")
     
     # Loans CSV headers
     loans_headers = ['id', 'نشان', 'نام', 'درجه', 'قسمت', 'شماره پرسنلی/دانشجویی', 
-                     'شماره تماس', 'عنوان کتاب', 'کد کنگره', 'تاریخ امانت', 'تاریخ بازگردانی']
+                     'شماره تماس', 'عنوان کتاب', 'کتابخانه', 'کد کنگره', 'تاریخ امانت', 'تاریخ بازگردانی']
     
     if not os.path.exists(LOANS_CSV):
         # Create with sample data
         sample_loans = [
             {'id': 1, 'نشان': 'کریمی', 'نام': 'محمدحسین', 'درجه': 'سال یکم', 
              'قسمت': 'گروهان توکلی', 'شماره پرسنلی/دانشجویی': '840331465', 
-             'شماره تماس': '9912946824', 'عنوان کتاب': 'هنر بازی استراتژیک', 
+             'شماره تماس': '9912946824', 'عنوان کتاب': 'هنر بازی استراتژیک', 'کتابخانه': 'اصلی',
              'کد کنگره': '', 'تاریخ امانت': '1404/07/02', 'تاریخ بازگردانی': ''},
             {'id': 2, 'نشان': 'نوری شعرباف', 'نام': 'امیرعباس', 'درجه': 'سال دوم', 
              'قسمت': 'گروهان شهید توکلی', 'شماره پرسنلی/دانشجویی': '840331271', 
-             'شماره تماس': '9931187440', 'عنوان کتاب': 'طراحی دیجیتال (مدار منطقی) مانو', 
+             'شماره تماس': '9931187440', 'عنوان کتاب': 'طراحی دیجیتال (مدار منطقی) مانو', 'کتابخانه': 'اصلی',
              'کد کنگره': 'tk7888', 'تاریخ امانت': '1404/08/12', 'تاریخ بازگردانی': '1404/08/25'}
         ]
         write_csv(LOANS_CSV, sample_loans, loans_headers)
@@ -137,7 +138,7 @@ def save_books():
         if not isinstance(data, list):
             return jsonify({'success': False, 'message': 'Data must be a list'}), 400
         
-        headers = ['id', 'name', 'author', 'code', 'number']
+        headers = ['id', 'name', 'author', 'code', 'number', 'کتابخانه']
         success = write_csv(BOOKS_CSV, data, headers)
         
         if success:
@@ -169,7 +170,7 @@ def save_loans():
             return jsonify({'success': False, 'message': 'Data must be a list'}), 400
         
         headers = ['id', 'نشان', 'نام', 'درجه', 'قسمت', 'شماره پرسنلی/دانشجویی', 
-                   'شماره تماس', 'عنوان کتاب', 'کد کنگره', 'تاریخ امانت', 'تاریخ بازگردانی']
+                   'شماره تماس', 'عنوان کتاب', 'کتابخانه', 'کد کنگره', 'تاریخ امانت', 'تاریخ بازگردانی']
         success = write_csv(LOANS_CSV, data, headers)
         
         if success:
@@ -223,7 +224,7 @@ def import_csv():
                         data.append(row)
                     
                     # Save to CSV
-                    book_headers = ['id', 'name', 'author', 'code', 'number']
+                    book_headers = ['id', 'name', 'author', 'code', 'number', 'کتابخانه']
                     write_csv(BOOKS_CSV, data, book_headers)
                     results['books'] = f'Imported {len(data)} books'
         
@@ -257,7 +258,7 @@ def import_csv():
                     
                     # Save to CSV
                     loan_headers = ['id', 'نشان', 'نام', 'درجه', 'قسمت', 'شماره پرسنلی/دانشجویی', 
-                                   'شماره تماس', 'عنوان کتاب', 'کد کنگره', 'تاریخ امانت', 'تاریخ بازگردانی']
+                                   'شماره تماس', 'عنوان کتاب', 'کتابخانه', 'کد کنگره', 'تاریخ امانت', 'تاریخ بازگردانی']
                     write_csv(LOANS_CSV, data, loan_headers)
                     results['loans'] = f'Imported {len(data)} loans'
         
@@ -274,14 +275,14 @@ def export_csv():
         
         if export_type in ['books', 'all']:
             books = read_csv(BOOKS_CSV)
-            book_headers = ['id', 'name', 'author', 'code', 'number']
+            book_headers = ['id', 'name', 'author', 'code', 'number', 'کتابخانه']
             book_csv = os.path.join(DATA_DIR, 'export_books.csv')
             write_csv(book_csv, books, book_headers)
         
         if export_type in ['loans', 'all']:
             loans = read_csv(LOANS_CSV)
             loan_headers = ['id', 'نشان', 'نام', 'درجه', 'قسمت', 'شماره پرسنلی/دانشجویی', 
-                           'شماره تماس', 'عنوان کتاب', 'کد کنگره', 'تاریخ امانت', 'تاریخ بازگردانی']
+                           'شماره تماس', 'عنوان کتاب', 'کتابخانه', 'کد کنگره', 'تاریخ امانت', 'تاریخ بازگردانی']
             loan_csv = os.path.join(DATA_DIR, 'export_loans.csv')
             write_csv(loan_csv, loans, loan_headers)
         
