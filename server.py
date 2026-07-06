@@ -68,21 +68,54 @@ def write_csv(file_path, data, headers):
 
 # ==================== INITIALIZE CSV FILES ====================
 
+def migrate_csv_headers(file_path, required_headers, defaults=None):
+    """If a CSV file already exists but is missing one of the required columns
+    (e.g. an older books.csv/loans.csv you copy in before starting the server,
+    made before the 'کتابخانه'/'library' column existed), add the missing
+    column(s) with a default value and rewrite the file. Any extra columns the
+    file already has that aren't part of our schema are kept, appended at the end.
+    Does nothing if the file is already up to date."""
+    defaults = defaults or {}
+    if not os.path.exists(file_path):
+        return
+    try:
+        with open(file_path, 'r', encoding='utf-8-sig') as f:
+            reader = csv.DictReader(f)
+            existing_headers = reader.fieldnames or []
+            rows = list(reader)
+    except Exception as e:
+        print(f"⚠️ Could not inspect {file_path} for migration: {e}")
+        return
+
+    missing = [h for h in required_headers if h not in existing_headers]
+    if not missing:
+        return  # already up to date, nothing to do
+
+    final_headers = required_headers + [h for h in existing_headers if h not in required_headers]
+    for row in rows:
+        for h in missing:
+            row[h] = defaults.get(h, '')
+    write_csv(file_path, rows, final_headers)
+    print(f"🔧 Updated {os.path.basename(file_path)}: added missing column(s) {', '.join(missing)}")
+
 def init_csv_files():
-    """Create default CSV files if they don't exist"""
+    """Create default CSV files if they don't exist, or migrate them if they
+    exist but were made before the multi-library feature (missing column)."""
     # Books CSV headers
-    # 'کتابخانه' (library) tags which collection a book belongs to, e.g. 'اصلی' or 'دانشکده برق'
-    books_headers = ['id', 'name', 'author', 'code', 'number', 'کتابخانه']
+    # 'library' tags which collection a book belongs to, e.g. 'اصلی' or 'دانشکده برق'
+    books_headers = ['id', 'name', 'author', 'code', 'number', 'library']
     
     if not os.path.exists(BOOKS_CSV):
         # Create with sample data
         sample_books = [
-            {'id': 1, 'name': 'پرسشهاي عجيب و پاسخ هاي عجيب تر', 'author': 'نوشته ا. جي . آرمسترانگ', 'code': 'AC', 'number': 6, 'کتابخانه': 'اصلی'},
-            {'id': 2, 'name': 'ترجمه و گلچینی از کشکول شیخ بهایی (م)', 'author': 'نجفی یزدی', 'code': 'AC۱۰۵', 'number': 1, 'کتابخانه': 'اصلی'},
-            {'id': 3, 'name': 'کشکول طبسی(مرجع)', 'author': 'سید علنیقی طبسی حائری', 'code': 'AC۱۲۷', 'number': 1, 'کتابخانه': 'اصلی'}
+            {'id': 1, 'name': 'پرسشهاي عجيب و پاسخ هاي عجيب تر', 'author': 'نوشته ا. جي . آرمسترانگ', 'code': 'AC', 'number': 6, 'library': 'اصلی'},
+            {'id': 2, 'name': 'ترجمه و گلچینی از کشکول شیخ بهایی (م)', 'author': 'نجفی یزدی', 'code': 'AC۱۰۵', 'number': 1, 'library': 'اصلی'},
+            {'id': 3, 'name': 'کشکول طبسی(مرجع)', 'author': 'سید علنیقی طبسی حائری', 'code': 'AC۱۲۷', 'number': 1, 'library': 'اصلی'}
         ]
         write_csv(BOOKS_CSV, sample_books, books_headers)
         print(f"✅ Created {BOOKS_CSV} with sample data")
+    else:
+        migrate_csv_headers(BOOKS_CSV, books_headers, {'library': 'اصلی'})
     
     # Loans CSV headers
     loans_headers = ['id', 'نشان', 'نام', 'درجه', 'قسمت', 'شماره پرسنلی/دانشجویی', 
@@ -102,6 +135,8 @@ def init_csv_files():
         ]
         write_csv(LOANS_CSV, sample_loans, loans_headers)
         print(f"✅ Created {LOANS_CSV} with sample data")
+    else:
+        migrate_csv_headers(LOANS_CSV, loans_headers, {'کتابخانه': 'اصلی'})
 
 # Initialize CSV files
 init_csv_files()
@@ -138,7 +173,7 @@ def save_books():
         if not isinstance(data, list):
             return jsonify({'success': False, 'message': 'Data must be a list'}), 400
         
-        headers = ['id', 'name', 'author', 'code', 'number', 'کتابخانه']
+        headers = ['id', 'name', 'author', 'code', 'number', 'library']
         success = write_csv(BOOKS_CSV, data, headers)
         
         if success:
@@ -224,7 +259,7 @@ def import_csv():
                         data.append(row)
                     
                     # Save to CSV
-                    book_headers = ['id', 'name', 'author', 'code', 'number', 'کتابخانه']
+                    book_headers = ['id', 'name', 'author', 'code', 'number', 'library']
                     write_csv(BOOKS_CSV, data, book_headers)
                     results['books'] = f'Imported {len(data)} books'
         
@@ -275,7 +310,7 @@ def export_csv():
         
         if export_type in ['books', 'all']:
             books = read_csv(BOOKS_CSV)
-            book_headers = ['id', 'name', 'author', 'code', 'number', 'کتابخانه']
+            book_headers = ['id', 'name', 'author', 'code', 'number', 'library']
             book_csv = os.path.join(DATA_DIR, 'export_books.csv')
             write_csv(book_csv, books, book_headers)
         

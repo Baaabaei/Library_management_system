@@ -402,7 +402,6 @@
     <div class="sec-header">
       <div class="sec-title">📚 فهرست کتب کتابخانه</div>
       <div class="export-row">
-        <button class="btn btn-ghost" onclick="exportBooks()">⬇ دانلود CSV</button>
         <button class="btn btn-primary" onclick="openAddBook()">+ افزودن کتاب</button>
       </div>
     </div>
@@ -448,7 +447,6 @@
           <option value="اصلی">کتابخانه اصلی</option>
           <option value="دانشکده برق">دانشکده برق</option>
         </select>
-        <button class="btn btn-ghost" onclick="exportLoans()">⬇ دانلود CSV</button>
         <button class="btn btn-primary" onclick="openAddLoan()">+ ثبت امانت</button>
       </div>
     </div>
@@ -488,7 +486,6 @@
           <option value="اصلی">کتابخانه اصلی</option>
           <option value="دانشکده برق">دانشکده برق</option>
         </select>
-        <button class="btn btn-ghost" onclick="exportOverdue()">⬇ دانلود CSV</button>
       </div>
     </div>
     <p class="text-muted" style="margin-bottom:16px;font-size:13px;">این فهرست بر اساس تاریخ شمسی سیستم شما و به‌صورت خودکار محاسبه می‌شود.</p>
@@ -643,22 +640,61 @@
 
 <script>
 // ===================== DATA =====================
-const INITIAL_BOOKS = [{"name":" پرسشهاي عجيب و پاسخ هاي عجيب تر ","author":" نوشته ا. جي . آرمسترانگ ترجمه و بازنوشته پريسا همايون روز ","code":" AC ","number":6},{"name":" ترجمه و گلچینی از کشکول شیخ بهایی (م) ","author":" نجفی یزدی ","code":" AC۱۰۵ ","number":1},{"name":" کشکول طبسی(مرجع) ","author":" سید علنیقی طبسی حائری ","code":" AC۱۲۷ ","number":1}];
+// API_BASE lets this page work whether it's opened by Flask (same-origin, use relative
+// paths) or opened directly as a local file (fall back to the default local server URL).
+const API_BASE = (location.protocol === 'file:') ? 'http://localhost:5000' : '';
 
-const INITIAL_LOANS = [{"نشان":"کریمی","نام":"محمدحسین","درجه":"سال یکم","قسمت":"گروهان توکلی","شماره پرسنلی/دانشجویی":"840331465","شماره تماس":"9912946824","عنوان کتاب":"هنر بازی استراتژیک","کد کنگره":"","تاریخ امانت":"1404/07/02","تاریخ بازگردانی":""},{"نشان":"نوری شعرباف","نام":"امیرعباس","درجه":"سال دوم","قسمت":"گروهان  شهید توکلی","شماره پرسنلی/دانشجویی":"840331271","شماره تماس":"9931187440","عنوان کتاب":"طراحی دیجیتال (مدار منطقی) مانو","کد کنگره":"tk7888","تاریخ امانت":"1404/08/12","تاریخ بازگردانی":"1404/08/25"},{"نشان":"سلیمی","نام":"مهران","درجه":"سال یکم","قسمت":"شهید دوران","شماره پرسنلی/دانشجویی":"840329639","شماره تماس":"9217944328","عنوان کتاب":"انواع مدیتیشن کوندالینی","کد کنگره":"BL627","تاریخ امانت":"1404/08/03","تاریخ بازگردانی":"1404/08/13"},{"نشان":"شیخی","نام":"حسین","درجه":"سرباز","قسمت":"شهید اقبالی","شماره پرسنلی/دانشجویی":"-","شماره تماس":"9377390480","عنوان کتاب":"تاریخ انبیا","کد کنگره":"","تاریخ امانت":"1404/07/06","تاریخ بازگردانی":""},{"نشان":"شیخی","نام":"حسین","درجه":"سرباز","قسمت":"شهید اقبالی","شماره پرسنلی/دانشجویی":"-","شماره تماس":"9377390480","عنوان کتاب":"زنان نمونه","کد کنگره":"","تاریخ امانت":"1404/07/06","تاریخ بازگردانی":""}];
+let books = [];
+let loans = [];
+let nextBookId = 1;
+let nextLoanId = 1;
 
-// Load from localStorage or use initial data
-let books = JSON.parse(localStorage.getItem('lib_books') || 'null') || INITIAL_BOOKS.map((b,i) => ({...b, id: i+1, library: 'اصلی'}));
-let loans = JSON.parse(localStorage.getItem('lib_loans') || 'null') || INITIAL_LOANS.map((l,i) => ({...l, id: i+1, 'کتابخانه': 'اصلی'}));
-// Backfill library field for data saved before the multi-library feature existed
-books = books.map(b => ({...b, library: b.library || 'اصلی'}));
-loans = loans.map(l => ({...l, 'کتابخانه': l['کتابخانه'] || 'اصلی'}));
-let nextBookId = Math.max(...books.map(b=>b.id||0), 0) + 1;
-let nextLoanId = Math.max(...loans.map(l=>l.id||0), 0) + 1;
+async function loadData() {
+  try {
+    const [booksRes, loansRes] = await Promise.all([
+      fetch(`${API_BASE}/api/books`),
+      fetch(`${API_BASE}/api/loans`)
+    ]);
+    if (!booksRes.ok || !loansRes.ok) throw new Error('Server responded with an error');
+    books = await booksRes.json();
+    loans = await loansRes.json();
+  } catch (e) {
+    console.error('Failed to load data from server:', e);
+    books = [];
+    loans = [];
+    toast('اتصال به سرور برقرار نشد. مطمئن شوید server.py اجرا شده و صفحه از آدرس http://localhost:5000 باز شده است.', 'error');
+  }
+  // Backfill library field defaults for any legacy rows without it
+  books = books.map(b => ({...b, library: b.library || 'اصلی'}));
+  loans = loans.map(l => ({...l, 'کتابخانه': l['کتابخانه'] || 'اصلی'}));
+  nextBookId = Math.max(...books.map(b=>b.id||0), 0) + 1;
+  nextLoanId = Math.max(...loans.map(l=>l.id||0), 0) + 1;
+  renderDashboard();
+  renderBooks();
+}
 
-function save() {
-  localStorage.setItem('lib_books', JSON.stringify(books));
-  localStorage.setItem('lib_loans', JSON.stringify(loans));
+// Persists the full in-memory books/loans arrays to the server's CSV files.
+async function save() {
+  try {
+    const [booksRes, loansRes] = await Promise.all([
+      fetch(`${API_BASE}/api/books`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(books)
+      }),
+      fetch(`${API_BASE}/api/loans`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(loans)
+      })
+    ]);
+    const booksResult = await booksRes.json();
+    const loansResult = await loansRes.json();
+    if (!booksResult.success || !loansResult.success) throw new Error('Server reported a save failure');
+  } catch (e) {
+    console.error('Failed to save data to server:', e);
+    toast('ذخیره روی سرور ناموفق بود. اتصال سرور Python را بررسی کنید.', 'error');
+  }
 }
 
 // ===================== JALALI DATE HELPERS =====================
@@ -897,11 +933,6 @@ function deleteBook(id) {
   save(); renderBooks(); renderDashboard();
   toast('کتاب حذف شد','info');
 }
-function exportBooks() {
-  const rows = [['عنوان','نویسنده','کد کنگره','کتابخانه','تعداد کل','موجود']];
-  books.forEach(b => rows.push([b.name.trim(), b.author.trim(), (b.code||'').trim(), b.library || 'اصلی', b.number, getAvailableCount(b)]));
-  downloadCSV(rows, 'book_list.csv');
-}
 
 // ===================== LOANS =====================
 function renderLoans() {
@@ -1039,16 +1070,6 @@ function confirmReturn() {
   save(); closeModal('modal-return'); renderLoans(); renderDashboard();
   toast('تحویل کتاب ثبت شد','success');
 }
-function exportLoans() {
-  const rows = [['نشان','نام','درجه','قسمت','شماره پرسنلی','شماره تماس','عنوان کتاب','کتابخانه','کد کنگره','تاریخ امانت','تاریخ بازگردانی','وضعیت']];
-  loans.forEach(l => rows.push([
-    l['نشان'],l['نام'],l['درجه'],l['قسمت'],l['شماره پرسنلی/دانشجویی'],
-    l['شماره تماس'],l['عنوان کتاب'],l['کتابخانه']||'اصلی',l['کد کنگره']||'',
-    l['تاریخ امانت'],l['تاریخ بازگردانی']||'',
-    l['تاریخ بازگردانی']?'تحویل داده شده':'در امانت'
-  ]));
-  downloadCSV(rows, 'loans.csv');
-}
 
 // ===================== OVERDUE =====================
 function renderOverdue() {
@@ -1077,14 +1098,6 @@ function renderOverdue() {
     </tr>`).join('');
 }
 
-function exportOverdue() {
-  const overdue = getOverdueLoans();
-  const rows = [['نشان','نام','شماره تماس','عنوان کتاب','کتابخانه','تاریخ امانت','روزهای دیرکرد']];
-  overdue.forEach(l => rows.push([
-    l['نشان'], l['نام'], l['شماره تماس'], l['عنوان کتاب'], l['کتابخانه']||'اصلی', l['تاریخ امانت'], l.__days
-  ]));
-  downloadCSV(rows, 'overdue.csv');
-}
 
 // ===================== SEARCH =====================
 function renderGlobalSearch() {
@@ -1141,19 +1154,9 @@ function toast(msg, type='info') {
   setTimeout(() => t.remove(), 3000);
 }
 
-// ===================== CSV EXPORT =====================
-function downloadCSV(rows, filename) {
-  const bom = '\uFEFF';
-  const csv = bom + rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
-  const a = document.createElement('a');
-  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-  a.download = filename;
-  a.click();
-}
 
 // ===================== INIT =====================
-renderDashboard();
-renderBooks();
+loadData();
 </script>
 </body>
 </html>
