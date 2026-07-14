@@ -91,14 +91,14 @@ The system uses CSV files for data persistence, eliminating the need for a separ
 ### Dashboard
 Get an overview of your library's status at a glance.
 
-![Dashboard](docs/images/dashboard.png)
+![Dashboard](images/dashboard.png)
 
 
 ### Automatic Overdue Calculation
 The system calculates overdue days based on the **Jalali (Shamsi/Persian) calendar**. It compares the loan's borrow date against today's system date to determine if an item is overdue.
 Automatically identify overdue items.
 
-![Overdue List](docs/images/overdue.png)
+![Overdue List](/images/overdue.png)
 *Items overdue by more than 2 weeks*
 ### Multi-Library Support
 Each book and loan can be associated with a specific library branch, allowing you to manage multiple collections within a single system.
